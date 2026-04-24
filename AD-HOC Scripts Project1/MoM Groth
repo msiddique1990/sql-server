@@ -31,7 +31,7 @@ SELECT start_month
 		WHEN DATEDIFF(MONTH, prv_month, start_month) > 1
 			THEN 1
 		WHEN prv_calls IS NULL
-			OR prv_calls = 0
+			OR prv_calls = 0 
 			THEN NULL
 		ELSE (total_calls - prv_calls) * 1.00 / prv_calls
 		END AS growth
