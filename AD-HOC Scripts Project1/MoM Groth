@@ -1,0 +1,39 @@
+WITH monthly_calls
+AS (
+	SELECT vendor_id
+		,COUNT(lead_id) total_calls
+		,DATEFROMPARTS(year(call_date), month(call_date), 1) start_month
+	FROM DataLayer.dbo.CallData
+	WHERE call_date BETWEEN '2025-01-01'
+			AND '2025-04-10'
+	GROUP BY vendor_id
+		,YEAR(call_date)
+		,MONTH(call_date)
+	)
+	,mom_cal
+AS (
+	SELECT start_month
+		,vendor_id
+		,total_calls
+		,LAG(total_calls) OVER (
+			PARTITION BY vendor_id ORDER BY start_month
+			) prv_calls
+		,LAG(start_month) OVER (
+			PARTITION BY vendor_id ORDER BY start_month
+			) prv_month
+	FROM monthly_calls
+	)
+SELECT start_month
+	,vendor_id
+	,total_calls
+	,prv_calls
+	,CASE 
+		WHEN DATEDIFF(MONTH, prv_month, start_month) > 1
+			THEN 1
+		WHEN prv_calls IS NULL
+			OR prv_calls = 0 
+			THEN NULL
+		ELSE (total_calls - prv_calls) * 1.00 / prv_calls
+		END AS growth
+FROM mom_cal
+ORDER BY 2
